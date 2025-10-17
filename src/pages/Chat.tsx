@@ -5,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { GradeSelector } from '@/components/GradeSelector';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { useVoiceOutput } from '@/hooks/useVoiceOutput';
+import { ConsentDialog } from '@/components/ConsentDialog';
+import { Badge } from '@/components/ui/badge';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -30,15 +34,41 @@ export default function Chat() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
+  
   const { user } = useAuth();
   const { toast } = useToast();
   const { progress, incrementQuestions, setGradeAndSubject } = useProgress();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const { isListening, transcript, isSupported: voiceInputSupported, startListening, stopListening } = useVoiceInput();
+  const { speak, stop: stopSpeaking, isSpeaking, isSupported: voiceOutputSupported } = useVoiceOutput();
+
   const [randomQuote] = useState(
     motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]
   );
+
+  // Check consent on mount
+  useEffect(() => {
+    const consent = localStorage.getItem('happy_learn_consent');
+    if (!consent) {
+      setShowConsent(true);
+    }
+  }, []);
+
+  // Handle voice input transcript
+  useEffect(() => {
+    if (transcript && !isListening) {
+      setInput(transcript);
+      // Auto-send in voice mode
+      if (voiceMode && transcript.trim()) {
+        setTimeout(() => sendMessage(), 500);
+      }
+    }
+  }, [transcript, isListening, voiceMode]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -126,6 +156,11 @@ export default function Chat() {
       // Increment questions counter
       incrementQuestions();
 
+      // Auto-speak response if enabled
+      if (autoSpeak && assistantMessage) {
+        speak(assistantMessage);
+      }
+
       toast({
         title: "Response received!",
         description: "Happy has answered your question.",
@@ -158,9 +193,50 @@ export default function Chat() {
     }
   };
 
+  const toggleVoiceMode = () => {
+    const newMode = !voiceMode;
+    setVoiceMode(newMode);
+    
+    if (newMode && !localStorage.getItem('happy_learn_consent')) {
+      setShowConsent(true);
+      setVoiceMode(false);
+      return;
+    }
+
+    if (newMode) {
+      setAutoSpeak(true);
+      toast({
+        title: "Voice mode activated! 🎤",
+        description: "Tap the microphone to speak, I'll respond with voice too.",
+      });
+    } else {
+      setAutoSpeak(false);
+      stopSpeaking();
+      if (isListening) stopListening();
+      toast({
+        title: "Voice mode deactivated",
+        description: "Switched back to text mode.",
+      });
+    }
+  };
+
+  const handleVoiceInput = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-h-screen">
-      <div className="container mx-auto px-4 py-4 max-w-5xl flex-1 flex flex-col min-h-0">
+    <>
+      <ConsentDialog 
+        open={showConsent} 
+        onConsent={() => setShowConsent(false)} 
+      />
+      
+      <div className="flex flex-col h-[calc(100vh-4rem)] max-h-screen">
+        <div className="container mx-auto px-4 py-4 max-w-5xl flex-1 flex flex-col min-h-0">
         <Card className="mb-4">
           <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -174,6 +250,12 @@ export default function Chat() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {voiceMode && (
+                  <Badge variant="secondary" className="gap-2">
+                    <Volume2 className="h-3 w-3" />
+                    Voice Mode
+                  </Badge>
+                )}
                 <GradeSelector
                   initialGrade={progress.grade}
                   initialSubject={progress.subject}
@@ -243,16 +325,57 @@ export default function Chat() {
 
           <div className="border-t p-3 sm:p-4 bg-background">
             <div className="flex gap-2 items-end">
+              {voiceInputSupported && (
+                <Button
+                  onClick={handleVoiceInput}
+                  size="icon"
+                  variant={isListening ? "default" : "outline"}
+                  className="h-10 w-10 sm:h-11 sm:w-11"
+                  title={isListening ? "Stop listening" : "Start voice input"}
+                  disabled={loading}
+                >
+                  {isListening ? (
+                    <MicOff className="h-4 w-4 animate-pulse" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything... (Enter to send, Shift+Enter for new line)"
-                disabled={loading}
+                placeholder={
+                  isListening 
+                    ? "Listening..." 
+                    : voiceMode 
+                    ? "Tap 🎤 to speak or type here..." 
+                    : "Ask me anything... (Enter to send, Shift+Enter for new line)"
+                }
+                disabled={loading || isListening}
                 className="flex-1 min-h-[60px] max-h-[120px] resize-none text-sm sm:text-base"
                 aria-label="Chat input"
               />
+
+              {voiceOutputSupported && (
+                <Button
+                  onClick={toggleVoiceMode}
+                  size="icon"
+                  variant={voiceMode ? "default" : "outline"}
+                  className="h-10 w-10 sm:h-11 sm:w-11"
+                  title={voiceMode ? "Disable voice mode" : "Enable voice mode"}
+                  disabled={loading}
+                >
+                  {voiceMode ? (
+                    <Volume2 className="h-4 w-4" />
+                  ) : (
+                    <VolumeX className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+              
               <Button
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
@@ -264,10 +387,13 @@ export default function Chat() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">{randomQuote}</p>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              {isListening ? "🎤 Listening... Speak now!" : randomQuote}
+            </p>
           </div>
         </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
