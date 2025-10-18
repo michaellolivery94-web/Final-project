@@ -19,15 +19,17 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Learn Smarter with{' '}
-              <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                HappyLearn
-              </span>
+              Quality Education for Every Kenyan Learner
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Your personal AI tutor that adapts to your learning style. Get instant help,
-              track your progress, and achieve your educational goals with confidence.
+            <p className="text-lg sm:text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
+              HappyLearn supports <strong>UN SDG 4: Quality Education</strong> by providing accessible, 
+              CBC-aligned learning tools tailored for Kenyan students from Grade 1 to Grade 9.
+            </p>
+            
+            <p className="text-base sm:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Get personalized AI tutoring, track your learning journey, and master competencies 
+              through voice-enabled interaction—designed with and for Kenyan learners.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -42,6 +44,11 @@ export default function Home() {
                   <Link to="/lessons">
                     <Button size="lg" variant="outline" className="w-full sm:w-auto">
                       Browse Lessons
+                    </Button>
+                  </Link>
+                  <Link to="/assessments">
+                    <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                      Try Assessments
                     </Button>
                   </Link>
                 </>
@@ -82,9 +89,9 @@ export default function Home() {
               <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mb-4">
                 <Brain className="h-6 w-6 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-bold mb-3">AI-Powered Tutoring</h3>
+              <h3 className="text-xl font-bold mb-3">AI-Powered CBC Tutoring</h3>
               <p className="text-muted-foreground">
-                Get instant, personalized help from our advanced AI tutor that understands your learning style
+                Get instant help aligned with Kenya's Competency-Based Curriculum. Our AI understands your grade, subject, and learning needs—whether you type or speak.
               </p>
             </div>
 
@@ -92,9 +99,9 @@ export default function Home() {
               <div className="w-12 h-12 rounded-xl gradient-accent flex items-center justify-center mb-4">
                 <BookOpen className="h-6 w-6 text-accent-foreground" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Curated Lessons</h3>
+              <h3 className="text-xl font-bold mb-3">CBC-Aligned Content</h3>
               <p className="text-muted-foreground">
-                Access a library of expertly designed lessons across multiple subjects and difficulty levels
+                Every lesson, topic, and assessment is mapped to official CBC learning outcomes for Grades 1-9, with local examples and Kenyan context.
               </p>
             </div>
 
@@ -102,9 +109,9 @@ export default function Home() {
               <div className="w-12 h-12 rounded-xl bg-success flex items-center justify-center mb-4">
                 <TrendingUp className="h-6 w-6 text-success-foreground" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Track Progress</h3>
+              <h3 className="text-xl font-bold mb-3">Track Competency Growth</h3>
               <p className="text-muted-foreground">
-                Monitor your learning journey with detailed analytics and celebrate your achievements
+                Monitor your mastery of CBC competencies—from Critical Thinking to Digital Literacy—and see your learning streak grow day by day.
               </p>
             </div>
           </div>
@@ -117,10 +124,10 @@ export default function Home() {
           <div className="container mx-auto">
             <div className="max-w-3xl mx-auto bg-gradient-to-br from-primary/10 via-accent/10 to-primary/10 rounded-3xl p-8 sm:p-12 text-center border border-primary/20">
               <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Ready to Transform Your Learning?
+                Education is a Right, Not a Privilege
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Join thousands of students already learning smarter with HappyLearn
+                Join Kenyan students already using HappyLearn to access quality, inclusive, and equitable education—anywhere, anytime.
               </p>
               <Link to="/auth">
                 <Button size="lg" className="gap-2">

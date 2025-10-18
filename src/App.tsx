@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Lessons from "./pages/Lessons";
+import Assessments from "./pages/Assessments";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/" element={<Home />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/lessons" element={<Lessons />} />
+                <Route path="/assessments" element={<Assessments />} />
                 <Route
                   path="/chat"
                   element={

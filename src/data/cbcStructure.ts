@@ -1,6 +1,8 @@
 export interface CBCTopic {
   name: string;
   description?: string;
+  outcomeId?: string;
+  competency?: string;
 }
 
 export interface CBCSubject {
@@ -9,6 +11,14 @@ export interface CBCSubject {
 
 export interface CBCStructure {
   [grade: string]: CBCSubject;
+}
+
+export interface AssessmentQuestion {
+  question: string;
+  options?: string[];
+  correctAnswer: string;
+  explanation: string;
+  outcomeId: string;
 }
 
 export const cbcStructure: CBCStructure = {
@@ -85,30 +95,116 @@ export const cbcStructure: CBCStructure = {
 
   "Grade 4": {
     "English": [
-      { name: "Advanced reading", description: "Longer texts and comprehension" },
-      { name: "Essay writing", description: "Structured compositions" },
-      { name: "Grammar mastery", description: "Parts of speech" },
-      { name: "Vocabulary expansion", description: "Synonyms, antonyms, homophones" },
+      { 
+        name: "Advanced reading", 
+        description: "Longer texts and comprehension",
+        outcomeId: "CBC-ENG-4.1",
+        competency: "Communication and Collaboration"
+      },
+      { 
+        name: "Essay writing", 
+        description: "Structured compositions",
+        outcomeId: "CBC-ENG-4.2",
+        competency: "Critical Thinking and Problem Solving"
+      },
+      { 
+        name: "Grammar mastery", 
+        description: "Parts of speech",
+        outcomeId: "CBC-ENG-4.3",
+        competency: "Communication and Collaboration"
+      },
+      { 
+        name: "Vocabulary expansion", 
+        description: "Synonyms, antonyms, homophones",
+        outcomeId: "CBC-ENG-4.4",
+        competency: "Communication and Collaboration"
+      },
     ],
     "Kiswahili": [
-      { name: "Usomaji", description: "Advanced reading skills" },
-      { name: "Uandishi", description: "Letter and essay writing" },
-      { name: "Sarufi ya kina", description: "Advanced grammar" },
+      { 
+        name: "Usomaji", 
+        description: "Advanced reading skills",
+        outcomeId: "CBC-KIS-4.1",
+        competency: "Mawasiliano na Ushirikiano"
+      },
+      { 
+        name: "Uandishi", 
+        description: "Letter and essay writing",
+        outcomeId: "CBC-KIS-4.2",
+        competency: "Ubunifu na Uvumbuzi"
+      },
+      { 
+        name: "Sarufi ya kina", 
+        description: "Advanced grammar",
+        outcomeId: "CBC-KIS-4.3",
+        competency: "Mawasiliano na Ushirikiano"
+      },
     ],
     "Mathematics": [
-      { name: "Large numbers", description: "Operations up to millions" },
-      { name: "Decimal fractions", description: "Introduction to decimals" },
-      { name: "Perimeter & area", description: "Measuring shapes" },
-      { name: "Data handling", description: "Graphs and charts" },
+      { 
+        name: "Large numbers", 
+        description: "Operations up to millions",
+        outcomeId: "CBC-MATH-4.1",
+        competency: "Critical Thinking and Problem Solving"
+      },
+      { 
+        name: "Decimal fractions", 
+        description: "Introduction to decimals",
+        outcomeId: "CBC-MATH-4.2",
+        competency: "Critical Thinking and Problem Solving"
+      },
+      { 
+        name: "Fractions", 
+        description: "Understanding parts of a whole - halves, quarters, thirds",
+        outcomeId: "CBC-MATH-4.3",
+        competency: "Critical Thinking and Problem Solving"
+      },
+      { 
+        name: "Perimeter & area", 
+        description: "Measuring shapes",
+        outcomeId: "CBC-MATH-4.4",
+        competency: "Critical Thinking and Problem Solving"
+      },
+      { 
+        name: "Data handling", 
+        description: "Graphs and charts",
+        outcomeId: "CBC-MATH-4.5",
+        competency: "Digital Literacy"
+      },
     ],
     "Science & Technology": [
-      { name: "Plants", description: "Parts and functions" },
-      { name: "Animals", description: "Classification and habitats" },
-      { name: "Simple machines", description: "Levers, pulleys, wheels" },
+      { 
+        name: "Plants", 
+        description: "Parts and functions",
+        outcomeId: "CBC-SCI-4.1",
+        competency: "Learning to Learn"
+      },
+      { 
+        name: "Animals", 
+        description: "Classification and habitats",
+        outcomeId: "CBC-SCI-4.2",
+        competency: "Learning to Learn"
+      },
+      { 
+        name: "Simple machines", 
+        description: "Levers, pulleys, wheels",
+        outcomeId: "CBC-SCI-4.3",
+        competency: "Creativity and Imagination"
+      },
     ],
     "Social Studies": [
-      { name: "Kenya's regions", description: "Geographic features" },
-      { name: "Economic activities", description: "Farming, trade, industry" },
+      { 
+        name: "Kenya's regions", 
+        description: "Geographic features",
+        outcomeId: "CBC-SOC-4.1",
+        competency: "Citizenship"
+      },
+      { 
+        name: "Economic activities", 
+        description: "Farming, trade, industry",
+        outcomeId: "CBC-SOC-4.2",
+        competency: "Critical Thinking and Problem Solving"
+      },
     ],
   },
 

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target } from 'lucide-react';
 import { useState } from 'react';
 
 export function Navbar() {
@@ -13,6 +13,7 @@ export function Navbar() {
 
   const navLinks = [
     { path: '/lessons', label: 'Lessons', icon: BookOpen },
+    { path: '/assessments', label: 'Assessments', icon: Target },
     { path: '/chat', label: 'AI Tutor', icon: MessageSquare },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
