@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_reports: {
+        Row: {
+          activity_id: string
+          completed_at: string | null
+          id: string
+          metadata: Json | null
+          score: number | null
+          time_spent_sec: number
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          completed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          score?: number | null
+          time_spent_sec: number
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          completed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          score?: number | null
+          time_spent_sec?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_reports_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "study_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_history: {
         Row: {
           created_at: string | null
@@ -39,6 +77,68 @@ export type Database = {
           id?: string
           messages?: Json | null
           subject?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hydration_cache: {
+        Row: {
+          cached_at: string | null
+          last_used_at: string | null
+          reason: string | null
+          starter_activity_id: string | null
+          user_id: string
+        }
+        Insert: {
+          cached_at?: string | null
+          last_used_at?: string | null
+          reason?: string | null
+          starter_activity_id?: string | null
+          user_id: string
+        }
+        Update: {
+          cached_at?: string | null
+          last_used_at?: string | null
+          reason?: string | null
+          starter_activity_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hydration_cache_starter_activity_id_fkey"
+            columns: ["starter_activity_id"]
+            isOneToOne: false
+            referencedRelation: "study_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learner_skills: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_practiced_at: string | null
+          proficiency: number | null
+          skill_code: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_practiced_at?: string | null
+          proficiency?: number | null
+          skill_code: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_practiced_at?: string | null
+          proficiency?: number | null
+          skill_code?: string
           updated_at?: string | null
           user_id?: string
         }
@@ -137,6 +237,45 @@ export type Database = {
           subject?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      study_activities: {
+        Row: {
+          activity_type: string
+          content: Json
+          created_at: string | null
+          description: string | null
+          difficulty: number | null
+          estimated_time_sec: number | null
+          id: string
+          locale: string | null
+          skill_code: string
+          title: string
+        }
+        Insert: {
+          activity_type: string
+          content: Json
+          created_at?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time_sec?: number | null
+          id?: string
+          locale?: string | null
+          skill_code: string
+          title: string
+        }
+        Update: {
+          activity_type?: string
+          content?: Json
+          created_at?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time_sec?: number | null
+          id?: string
+          locale?: string | null
+          skill_code?: string
+          title?: string
         }
         Relationships: []
       }

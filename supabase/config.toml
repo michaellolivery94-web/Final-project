@@ -2,3 +2,12 @@ project_id = "mzqszgunhmkphfclkyip"
 
 [functions.chat]
 verify_jwt = false
+
+[functions.studybuddy-hydrate]
+verify_jwt = true
+
+[functions.studybuddy-next]
+verify_jwt = true
+
+[functions.studybuddy-report]
+verify_jwt = true

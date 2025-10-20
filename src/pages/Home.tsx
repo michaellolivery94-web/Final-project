@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, Brain, TrendingUp, Sparkles } from 'lucide-react';
+import { StudyBuddy } from '@/components/StudyBuddy';
 
 export default function Home() {
   const { user } = useAuth();
@@ -71,6 +72,23 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Study Buddy Section - Instant Starter Activity */}
+      {user && (
+        <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+          <div className="container mx-auto max-w-3xl">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                Your Study Buddy
+              </h2>
+              <p className="text-muted-foreground">
+                Quick win — get started with a personalized activity
+              </p>
+            </div>
+            <StudyBuddy />
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
