@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Trophy, Clock } from "lucide-react";
+import { Loader2, Sparkles, Trophy, Clock, Volume2, WifiOff } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useVoiceOutput } from "@/hooks/useVoiceOutput";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useActivityCache } from "@/hooks/useActivityCache";
+import { useAccessibility } from "@/contexts/AccessibilityContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Activity {
   activity_id: string;
@@ -25,6 +31,12 @@ interface Activity {
 export const StudyBuddy = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { speak, stop, isSpeaking } = useVoiceOutput();
+  const { isOnline, queueLength, addToQueue } = useOfflineSync();
+  const { cacheActivity, getRandomCached, hasCachedActivities } = useActivityCache();
+  const { voiceEnabled } = useAccessibility();
+  const { t } = useLanguage();
+  
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,33 +45,60 @@ export const StudyBuddy = () => {
   const [score, setScore] = useState<number | null>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
 
-  // Hydrate on mount - get instant starter activity
+  // Hydrate on mount - with offline fallback
   useEffect(() => {
     if (!user) return;
     
     const fetchStarter = async () => {
       setLoading(true);
       try {
+        if (!isOnline) {
+          // Use cached activity if offline
+          const cached = getRandomCached();
+          if (cached) {
+            setActivity(cached);
+            setStartTime(Date.now());
+            toast({
+              title: t('offline'),
+              description: t('offlineMessage'),
+            });
+          }
+          return;
+        }
+
         const { data, error } = await supabase.functions.invoke("studybuddy-hydrate");
         
         if (error) throw error;
         
         setActivity(data);
+        cacheActivity(data);
         setStartTime(Date.now());
       } catch (err) {
         console.error("Hydrate error:", err);
-        toast({
-          variant: "destructive",
-          title: "Connection issue",
-          description: "Couldn't load your starter activity. Try again?",
-        });
+        
+        // Fallback to cache on error
+        const cached = getRandomCached();
+        if (cached) {
+          setActivity(cached);
+          setStartTime(Date.now());
+          toast({
+            title: "Using cached activity",
+            description: "Couldn't reach server, showing saved content",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Connection issue",
+            description: "No cached activities available. Connect to internet.",
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchStarter();
-  }, [user, toast]);
+  }, [user, toast, isOnline]);
 
   const handleSubmit = async () => {
     if (!activity || selectedAnswer === null) return;
@@ -73,20 +112,52 @@ export const StudyBuddy = () => {
     setShowFeedback(true);
     setSubmitting(true);
 
+    // Voice feedback
+    if (voiceEnabled) {
+      const feedbackText = isCorrect 
+        ? `${t('correct')} ${content.explanation || ''}`
+        : `${t('keepLearning')} ${content.explanation || ''}`;
+      speak(feedbackText);
+    }
+
+    const reportData = {
+      activity_id: activity.activity_id,
+      score: calculatedScore,
+      time_spent_sec: timeSpent,
+      metadata: { selected_answer: selectedAnswer },
+    };
+
     try {
+      if (!isOnline) {
+        // Queue for later sync
+        addToQueue(reportData);
+        toast({
+          title: isCorrect ? t('correct') : t('keepLearning'),
+          description: "Progress saved locally - will sync when online",
+        });
+        
+        // Load cached next activity
+        setTimeout(() => {
+          const cached = getRandomCached();
+          if (cached) {
+            setActivity(cached);
+            setSelectedAnswer(null);
+            setShowFeedback(false);
+            setScore(null);
+            setStartTime(Date.now());
+          }
+        }, 3000);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("studybuddy-report", {
-        body: {
-          activity_id: activity.activity_id,
-          score: calculatedScore,
-          time_spent_sec: timeSpent,
-          metadata: { selected_answer: selectedAnswer },
-        },
+        body: reportData,
       });
 
       if (error) throw error;
 
       toast({
-        title: isCorrect ? "Correct! 🎉" : "Keep learning! 💪",
+        title: isCorrect ? t('correct') : t('keepLearning'),
         description: isCorrect
           ? `Great job! ${data.updated_skills?.skill_code} proficiency improved.`
           : content.explanation || "Try again next time!",
@@ -95,17 +166,19 @@ export const StudyBuddy = () => {
       // Auto-load next activity after 3 seconds
       setTimeout(() => {
         if (data.next_activity) {
-          setActivity({
+          const nextActivity = {
             activity_id: data.next_activity.activity_id,
             type: "quiz",
             payload: {
               title: data.next_activity.title,
               description: data.next_activity.description,
-              content: {},
-              skill_code: "",
+              content: data.next_activity.content || {},
+              skill_code: data.next_activity.skill_code || "",
             },
             estimated_time_sec: data.next_activity.estimated_time_sec,
-          });
+          };
+          setActivity(nextActivity);
+          cacheActivity(nextActivity);
           setSelectedAnswer(null);
           setShowFeedback(false);
           setScore(null);
@@ -114,10 +187,10 @@ export const StudyBuddy = () => {
       }, 3000);
     } catch (err) {
       console.error("Report error:", err);
+      addToQueue(reportData);
       toast({
-        variant: "destructive",
-        title: "Couldn't save progress",
-        description: "Your answer wasn't recorded. Try again?",
+        title: "Saved locally",
+        description: "Will sync when connection improves",
       });
     } finally {
       setSubmitting(false);
@@ -127,24 +200,57 @@ export const StudyBuddy = () => {
   const handleGetNext = async () => {
     setLoading(true);
     try {
+      if (!isOnline) {
+        const cached = getRandomCached();
+        if (cached) {
+          setActivity(cached);
+          setSelectedAnswer(null);
+          setShowFeedback(false);
+          setScore(null);
+          setStartTime(Date.now());
+        }
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("studybuddy-next");
       
       if (error) throw error;
       
       setActivity(data);
+      cacheActivity(data);
       setSelectedAnswer(null);
       setShowFeedback(false);
       setScore(null);
       setStartTime(Date.now());
     } catch (err) {
       console.error("Next activity error:", err);
-      toast({
-        variant: "destructive",
-        title: "Couldn't load next activity",
-        description: "Try again in a moment.",
-      });
+      const cached = getRandomCached();
+      if (cached) {
+        setActivity(cached);
+        setSelectedAnswer(null);
+        setShowFeedback(false);
+        setScore(null);
+        setStartTime(Date.now());
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Couldn't load next activity",
+          description: "No cached content available",
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSpeak = () => {
+    if (!activity) return;
+    const content = activity.payload.content;
+    if (isSpeaking) {
+      stop();
+    } else {
+      const text = `${activity.payload.title}. ${content.question}`;
+      speak(text);
     }
   };
 
@@ -168,11 +274,14 @@ export const StudyBuddy = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-            Study Buddy
+            {t('studyBuddy')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <CardContent className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </CardContent>
       </Card>
     );
@@ -207,15 +316,38 @@ export const StudyBuddy = () => {
             <Sparkles className="w-5 h-5 text-primary" />
             <CardTitle className="text-xl">{activity.payload.title}</CardTitle>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span>{activity.estimated_time_sec}s</span>
+          <div className="flex items-center gap-2">
+            {!isOnline && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <WifiOff className="w-3 h-3" />
+                <span>Offline</span>
+              </div>
+            )}
+            {queueLength > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {queueLength} pending
+              </div>
+            )}
+            {voiceEnabled && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSpeak}
+                className="h-8 w-8"
+              >
+                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'text-primary animate-pulse' : ''}`} />
+              </Button>
+            )}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span>{activity.estimated_time_sec}s</span>
+            </div>
           </div>
         </div>
         <CardDescription>{activity.payload.description}</CardDescription>
         {(activity.reason || activity.why) && (
           <div className="mt-2 text-sm font-medium text-primary">
-            Why this? — {activity.reason || activity.why}
+            {t('whyThis')} — {activity.reason || activity.why}
           </div>
         )}
       </CardHeader>
@@ -249,7 +381,7 @@ export const StudyBuddy = () => {
 
             {showFeedback && content.explanation && (
               <div className="p-4 rounded-lg bg-muted">
-                <p className="text-sm font-medium mb-1">Explanation:</p>
+                <p className="text-sm font-medium mb-1">{t('explanation')}</p>
                 <p className="text-sm">{content.explanation}</p>
               </div>
             )}
@@ -268,15 +400,15 @@ export const StudyBuddy = () => {
                   disabled={selectedAnswer === null || submitting}
                   className="flex-1"
                 >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Answer"}
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('submitAnswer')}
                 </Button>
               ) : (
                 <Button onClick={handleGetNext} className="flex-1">
-                  Next Activity
+                  {t('nextActivity')}
                 </Button>
               )}
               <Button variant="outline" onClick={handleGetNext}>
-                Skip
+                {t('skip')}
               </Button>
             </div>
           </>
