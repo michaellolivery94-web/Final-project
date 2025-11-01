@@ -119,10 +119,61 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: font-size 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold;
+  }
+
+  /* Accessibility font sizes */
+  body.font-small {
+    font-size: 14px;
+  }
+
+  body.font-medium {
+    font-size: 16px;
+  }
+
+  body.font-large {
+    font-size: 18px;
+  }
+
+  body.font-large h1 { font-size: 2.5rem; }
+  body.font-large h2 { font-size: 2rem; }
+  body.font-large h3 { font-size: 1.75rem; }
+  body.font-large h4 { font-size: 1.5rem; }
+  body.font-large h5 { font-size: 1.25rem; }
+  body.font-large h6 { font-size: 1.125rem; }
+
+  /* High contrast mode */
+  body.high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 45 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 90%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --border: 0 0% 40%;
+    --input: 0 0% 40%;
+    --ring: 45 100% 50%;
+  }
+
+  body.high-contrast .shadow-glow {
+    box-shadow: 0 0 20px hsl(45 100% 50% / 0.6);
+  }
+
+  body.high-contrast button,
+  body.high-contrast a {
+    border: 2px solid hsl(var(--border));
   }
 }
 

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { AccessibilityMenu } from './AccessibilityMenu';
 import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target } from 'lucide-react';
 import { useState } from 'react';
 
@@ -46,6 +47,7 @@ export function Navbar() {
                   </Button>
                 </Link>
               ))}
+              <AccessibilityMenu />
               <Button
                 variant="ghost"
                 onClick={() => signOut()}
@@ -94,6 +96,9 @@ export function Navbar() {
                 </Button>
               </Link>
             ))}
+            <div className="px-2 py-2">
+              <AccessibilityMenu />
+            </div>
             <Button
               variant="ghost"
               onClick={() => {
