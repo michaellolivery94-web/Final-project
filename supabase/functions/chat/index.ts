@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,22 +34,73 @@ serve(async (req) => {
   }
 
   try {
-    // Rate limiting by IP
-    const clientIp = req.headers.get("x-forwarded-for") || "unknown";
-    if (!checkRateLimit(clientIp)) {
+    // Initialize Supabase client for authentication
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
+    );
+
+    // Verify authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Rate limiting by user ID instead of IP
+    if (!checkRateLimit(user.id)) {
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { messages, grade, subject } = await req.json();
+    const body = await req.json();
+    const { messages, grade, subject } = body;
     
+    // Input validation
     if (!Array.isArray(messages)) {
       return new Response(
-        JSON.stringify({ error: "messages array required" }),
+        JSON.stringify({ error: "Messages must be an array" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+    
+    if (messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Messages array cannot be empty" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (messages.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Too many messages. Maximum 50 allowed" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate each message
+    for (const msg of messages) {
+      if (!msg.role || !['user', 'assistant', 'system'].includes(msg.role)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid message role" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (typeof msg.content !== 'string' || msg.content.length > 4000) {
+        return new Response(
+          JSON.stringify({ error: "Message content must be string with max 4000 characters" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -113,10 +165,9 @@ Remember: You're here to inspire curiosity and build confidence. Make learning f
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("[INTERNAL] AI gateway error:", { userId: user.id, status: response.status });
       return new Response(
-        JSON.stringify({ error: "AI service error" }),
+        JSON.stringify({ error: "Service temporarily unavailable. Please try again" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -131,9 +182,9 @@ Remember: You're here to inspire curiosity and build confidence. Make learning f
       },
     });
   } catch (error) {
-    console.error("Chat error:", error);
+    console.error("[INTERNAL] Chat error:", { error: error instanceof Error ? error.message : "Unknown" });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -42,15 +42,65 @@ serve(async (req) => {
       });
     }
 
-    const { activity_id, score, time_spent_sec, metadata } = await req.json();
+    const body = await req.json();
+    const { activity_id, score, time_spent_sec, metadata } = body;
 
-    if (!activity_id || score === undefined || !time_spent_sec) {
+    // Input validation
+    if (!activity_id || typeof activity_id !== 'string') {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: activity_id, score, time_spent_sec" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: "Activity ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(activity_id)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid activity ID format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (score === undefined || typeof score !== 'number') {
+      return new Response(
+        JSON.stringify({ error: "Score is required and must be a number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (score < 0 || score > 1) {
+      return new Response(
+        JSON.stringify({ error: "Score must be between 0 and 1" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!time_spent_sec || typeof time_spent_sec !== 'number') {
+      return new Response(
+        JSON.stringify({ error: "Time spent is required and must be a number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!Number.isInteger(time_spent_sec) || time_spent_sec <= 0) {
+      return new Response(
+        JSON.stringify({ error: "Time spent must be a positive integer" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (time_spent_sec > 7200) {
+      return new Response(
+        JSON.stringify({ error: "Time spent cannot exceed 7200 seconds (2 hours)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (metadata !== undefined && (typeof metadata !== 'object' || Array.isArray(metadata))) {
+      return new Response(
+        JSON.stringify({ error: "Metadata must be an object if provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -79,8 +129,8 @@ serve(async (req) => {
     });
 
     if (reportError) {
-      console.error("Report insert error:", reportError);
-      return new Response(JSON.stringify({ error: "Failed to record activity" }), {
+      console.error("[INTERNAL] Report insert error:", { userId: user.id, error: reportError.message });
+      return new Response(JSON.stringify({ error: "Failed to save progress. Please try again" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -169,9 +219,9 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Report error:", error);
+    console.error("[INTERNAL] Report error:", { error: error instanceof Error ? error.message : "Unknown" });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred. Please try again" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
