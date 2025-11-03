@@ -11,3 +11,9 @@ verify_jwt = true
 
 [functions.studybuddy-report]
 verify_jwt = true
+
+[functions.gap-detector]
+verify_jwt = true
+
+[functions.teacher-insights]
+verify_jwt = true

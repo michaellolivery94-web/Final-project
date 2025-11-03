@@ -2,15 +2,36 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccessibilityMenu } from './AccessibilityMenu';
-import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target } from 'lucide-react';
-import { useState } from 'react';
+import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export function Navbar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    const checkTeacherRole = async () => {
+      if (!user) {
+        setIsTeacher(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .in('role', ['teacher', 'admin']);
+
+      setIsTeacher(!!data && data.length > 0);
+    };
+
+    checkTeacherRole();
+  }, [user]);
 
   const navLinks = [
     { path: '/lessons', label: 'Lessons', icon: BookOpen },
@@ -18,6 +39,11 @@ export function Navbar() {
     { path: '/chat', label: 'AI Tutor', icon: MessageSquare },
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
+
+  // Add teacher dashboard for teachers
+  const allLinks = isTeacher
+    ? [...navLinks, { path: '/teacher-dashboard', label: 'Teacher', icon: Users }]
+    : navLinks;
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border shadow-sm">
@@ -36,7 +62,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           {user && (
             <div className="hidden md:flex items-center gap-2">
-              {navLinks.map(({ path, label, icon: Icon }) => (
+              {allLinks.map(({ path, label, icon: Icon }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? "default" : "ghost"}
@@ -81,7 +107,7 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && user && (
           <div className="md:hidden py-4 space-y-2 border-t border-border">
-            {navLinks.map(({ path, label, icon: Icon }) => (
+            {allLinks.map(({ path, label, icon: Icon }) => (
               <Link
                 key={path}
                 to={path}

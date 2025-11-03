@@ -16,6 +16,7 @@ import Lessons from "./pages/Lessons";
 import Assessments from "./pages/Assessments";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,14 @@ const App = () => (
                       element={
                         <ProtectedRoute>
                           <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/teacher-dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <TeacherDashboard />
                         </ProtectedRoute>
                       }
                     />

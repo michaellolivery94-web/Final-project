@@ -1,5 +1,5 @@
 // Service Worker for offline PWA support
-const CACHE_NAME = 'happy-learn-v1';
+const CACHE_NAME = 'happy-learn-v2';
 const OFFLINE_URL = '/offline.html';
 
 const STATIC_ASSETS = [
@@ -7,6 +7,8 @@ const STATIC_ASSETS = [
   '/offline.html',
   '/manifest.json',
   '/favicon.ico',
+  '/dashboard',
+  '/teacher-dashboard',
 ];
 
 // Install - cache static assets
