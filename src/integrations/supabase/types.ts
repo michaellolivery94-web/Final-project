@@ -182,18 +182,21 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           id: string
+          role: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          role?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          role?: string | null
           user_id?: string
         }
         Relationships: []
@@ -316,7 +319,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      class_proficiency_summary: {
+        Row: {
+          avg_proficiency: number | null
+          learner_count: number | null
+          max_proficiency: number | null
+          min_proficiency: number | null
+          skill_code: string | null
+          skill_title: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
