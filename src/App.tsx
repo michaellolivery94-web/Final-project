@@ -9,6 +9,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
@@ -64,6 +65,7 @@ const App = () => (
                     />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  <Footer />
                 </ProgressProvider>
               </AuthProvider>
             </BrowserRouter>
