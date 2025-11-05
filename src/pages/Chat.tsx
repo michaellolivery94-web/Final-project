@@ -267,11 +267,14 @@ export default function Chat() {
                   initialGrade={progress.grade}
                   initialSubject={progress.subject}
                   onSelectionChange={(grade, subject) => {
-                    setGradeAndSubject(grade, subject);
-                    toast({
-                      title: "Settings updated",
-                      description: `Now learning ${subject} for ${grade}`,
-                    });
+                    // Only update if values actually changed
+                    if (grade !== progress.grade || subject !== progress.subject) {
+                      setGradeAndSubject(grade, subject);
+                      toast({
+                        title: "Settings updated",
+                        description: `Now learning ${subject} for ${grade}`,
+                      });
+                    }
                   }}
                   compact
                 />

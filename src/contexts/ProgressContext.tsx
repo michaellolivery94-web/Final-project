@@ -122,7 +122,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }, 2000);
 
     setSyncTimer(timer);
-  }, [syncTimer]);
+  }, []);
 
   const incrementQuestions = useCallback(() => {
     setProgress(prev => ({

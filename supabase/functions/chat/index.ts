@@ -108,6 +108,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Retry logic for AI gateway
+    const maxRetries = 3;
+    const retryDelay = (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 5000);
+
     // CBC-aware system prompt
     const systemPrompt = `You are Happy, a friendly and encouraging AI tutor specialized for the Kenyan Competency-Based Curriculum (CBC).
 
@@ -136,21 +140,56 @@ serve(async (req) => {
 
 Remember: You're here to inspire curiosity and build confidence. Make learning fun and relevant!`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages.slice(-12), // Keep last 12 messages for context window
-        ],
-        stream: true,
-      }),
-    });
+    // Retry logic with exponential backoff
+    let lastError: Error | null = null;
+    let response: Response | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...messages.slice(-12), // Keep last 12 messages for context window
+            ],
+            stream: true,
+          }),
+        });
+
+        // If successful or permanent error (429, 402, 400), break retry loop
+        if (response.ok || response.status === 429 || response.status === 402 || response.status === 400) {
+          break;
+        }
+
+        // For 500 errors, retry with backoff
+        if (response.status === 500 && attempt < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
+          continue;
+        }
+
+        // Other errors, break
+        break;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("Unknown error");
+        if (attempt < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay(attempt)));
+        }
+      }
+    }
+
+    if (!response) {
+      console.error("[INTERNAL] AI gateway error after retries:", { userId: user.id, error: lastError?.message });
+      return new Response(
+        JSON.stringify({ error: "Unable to connect to AI service. Please try again later." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
