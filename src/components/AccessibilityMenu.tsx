@@ -5,11 +5,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAccessibility } from "@/contexts/AccessibilityContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Settings, Volume2, Eye, Type } from "lucide-react";
+import { Settings, Volume2, Eye, Type, Moon, Sun } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export const AccessibilityMenu = () => {
-  const { fontSize, setFontSize, highContrast, toggleHighContrast, voiceEnabled, toggleVoice } = useAccessibility();
+  const { fontSize, setFontSize, highContrast, toggleHighContrast, voiceEnabled, toggleVoice, theme, toggleTheme } = useAccessibility();
   const { language, setLanguage } = useLanguage();
 
   return (
@@ -82,6 +82,19 @@ export const AccessibilityMenu = () => {
               id="voice"
               checked={voiceEnabled}
               onCheckedChange={toggleVoice}
+            />
+          </div>
+
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="theme" className="flex items-center gap-2">
+              {theme === 'light' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+            </Label>
+            <Switch
+              id="theme"
+              checked={theme === 'dark'}
+              onCheckedChange={toggleTheme}
             />
           </div>
         </div>

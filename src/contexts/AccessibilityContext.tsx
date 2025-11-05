@@ -7,6 +7,8 @@ interface AccessibilityContextType {
   toggleHighContrast: () => void;
   voiceEnabled: boolean;
   toggleVoice: () => void;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
 }
 
 const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
@@ -22,6 +24,11 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
 
   const [voiceEnabled, setVoiceEnabled] = useState(() => {
     return localStorage.getItem('happy-learn-voice') === 'true';
+  });
+
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('happy-learn-theme');
+    return (saved as 'light' | 'dark') || 'light';
   });
 
   useEffect(() => {
@@ -43,6 +50,12 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
     localStorage.setItem('happy-learn-voice', String(voiceEnabled));
   }, [voiceEnabled]);
 
+  useEffect(() => {
+    localStorage.setItem('happy-learn-theme', theme);
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+  }, [theme]);
+
   const setFontSize = (size: 'small' | 'medium' | 'large') => {
     setFontSizeState(size);
   };
@@ -55,6 +68,10 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
     setVoiceEnabled(!voiceEnabled);
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
   return (
     <AccessibilityContext.Provider
       value={{
@@ -64,6 +81,8 @@ export const AccessibilityProvider = ({ children }: { children: ReactNode }) => 
         toggleHighContrast,
         voiceEnabled,
         toggleVoice,
+        theme,
+        toggleTheme,
       }}
     >
       {children}
