@@ -11,6 +11,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput';
 import { useVoiceOutput } from '@/hooks/useVoiceOutput';
 import { ConsentDialog } from '@/components/ConsentDialog';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -84,6 +85,12 @@ export default function Chat() {
     setLoading(true);
 
     try {
+      // Get user session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Please sign in to chat with Happy');
+      }
+
       // Prepare message window (last 12 messages for context)
       const messageWindow = [...messages, userMessage].slice(-12);
       
@@ -91,7 +98,7 @@ export default function Chat() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: messageWindow,
