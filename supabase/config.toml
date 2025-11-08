@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.teacher-insights]
 verify_jwt = true
+
+[functions.generate-demo-data]
+verify_jwt = false
