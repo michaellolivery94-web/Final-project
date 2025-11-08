@@ -18,6 +18,7 @@ import Assessments from "./pages/Assessments";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import DemoDataGenerator from "./pages/DemoDataGenerator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
                         </ProtectedRoute>
                       }
                     />
+                    <Route path="/demo-data" element={<DemoDataGenerator />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <Footer />
