@@ -7,6 +7,8 @@ Supporting UN SDG 4: Quality Education through inclusive, AI-enhanced learning t
 
 Happy Learn is an intelligent study companion tailored to the Kenyan Competency-Based Curriculum (CBC). The app provides personalized, interactive learning experiences for students in Grades 1-9, with special focus on accessibility through voice interaction and mobile-first design.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c60f1df8-f8f4-41bb-951d-cb8a1aca6e30/deploy-status)](https://app.netlify.com/projects/happylearnapp/deploys)
+
 ### Key Features
 
 ✅ **Voice-First Learning**
