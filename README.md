@@ -1,4 +1,6 @@
 # Happy Learn - AI-Powered CBC Study Buddy 🎓
+## Live Demo
+https://my-ai-buddy-learn.vercel.app/
 
 **Designed with and for Kenyan Learners**  
 Supporting UN SDG 4: Quality Education through inclusive, AI-enhanced learning tools.
