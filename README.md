@@ -301,9 +301,7 @@ MIT License - See LICENSE file for details
 
 ## 🤝 Support
 
-- **Email:** support@happylearn.ke (example)
-- **Privacy Officer:** privacy@happylearn.ke
-- **Community:** Join our Discord/Slack for educator discussions
+- **Contact: Trevor Michael | trevoringari3@gmail.com | Happylearn.ai
 
 ## 🎯 Roadmap
 
@@ -316,5 +314,5 @@ MIT License - See LICENSE file for details
 
 ---
 
-**Built with ❤️ for Kenyan Learners**  
+**Built with ❤️ by trevormichael through PLP for Kenyan Learners**  
 Supporting SDG 4: Quality Education for All
