@@ -177,6 +177,65 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount_kes: number
+          checkout_request_id: string | null
+          created_at: string
+          id: string
+          merchant_request_id: string | null
+          mpesa_receipt_number: string | null
+          payment_method: string
+          phone_number: string | null
+          result_code: string | null
+          result_desc: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_kes: number
+          checkout_request_id?: string | null
+          created_at?: string
+          id?: string
+          merchant_request_id?: string | null
+          mpesa_receipt_number?: string | null
+          payment_method: string
+          phone_number?: string | null
+          result_code?: string | null
+          result_desc?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_kes?: number
+          checkout_request_id?: string | null
+          created_at?: string
+          id?: string
+          merchant_request_id?: string | null
+          mpesa_receipt_number?: string | null
+          payment_method?: string
+          phone_number?: string | null
+          result_code?: string | null
+          result_desc?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -276,6 +335,51 @@ export type Database = {
           locale?: string | null
           skill_code?: string
           title?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount_kes: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          mpesa_receipt_number: string | null
+          payment_method: string
+          plan_type: string
+          starts_at: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_kes: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          mpesa_receipt_number?: string | null
+          payment_method: string
+          plan_type: string
+          starts_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_kes?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          mpesa_receipt_number?: string | null
+          payment_method?: string
+          plan_type?: string
+          starts_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

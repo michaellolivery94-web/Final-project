@@ -2,15 +2,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { AccessibilityMenu } from './AccessibilityMenu';
-import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target, Users } from 'lucide-react';
+import { BookOpen, MessageSquare, LayoutDashboard, LogOut, Menu, X, Target, Users, Crown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
 
 export function Navbar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
+  const { isPremium } = useSubscription();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -74,6 +76,20 @@ export function Navbar() {
                 </Link>
               ))}
               <AccessibilityMenu />
+              {!isPremium && (
+                <Link to="/pricing">
+                  <Button variant="outline" className="gap-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+                    <Crown className="h-4 w-4" />
+                    Go Premium
+                  </Button>
+                </Link>
+              )}
+              {isPremium && (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-accent/20 text-accent text-xs font-medium">
+                  <Crown className="h-3 w-3" />
+                  Premium
+                </span>
+              )}
               <Button
                 variant="ghost"
                 onClick={() => signOut()}
@@ -122,6 +138,17 @@ export function Navbar() {
                 </Button>
               </Link>
             ))}
+            {!isPremium && (
+              <Link to="/pricing" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 border-accent text-accent"
+                >
+                  <Crown className="h-4 w-4" />
+                  Go Premium
+                </Button>
+              </Link>
+            )}
             <div className="px-2 py-2">
               <AccessibilityMenu />
             </div>

@@ -1,11 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { BookOpen, Brain, TrendingUp, Sparkles } from 'lucide-react';
+import { BookOpen, Brain, TrendingUp, Sparkles, Crown, Smartphone, Check } from 'lucide-react';
 import { StudyBuddy } from '@/components/StudyBuddy';
+import { useSubscription, PRICING_PLANS } from '@/hooks/useSubscription';
 
 export default function Home() {
   const { user } = useAuth();
+  const { isPremium } = useSubscription();
 
   return (
     <div className="min-h-screen">
@@ -136,6 +138,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Premium CTA Section - For logged in users who aren't premium */}
+      {user && !isPremium && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="container mx-auto">
+            <div className="max-w-4xl mx-auto bg-gradient-to-br from-accent/20 via-primary/10 to-accent/20 rounded-3xl p-8 sm:p-12 border border-accent/30">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-shrink-0 w-20 h-20 rounded-2xl gradient-accent flex items-center justify-center shadow-lg">
+                  <Crown className="h-10 w-10 text-accent-foreground" />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+                    Unlock Unlimited Learning with Premium
+                  </h2>
+                  <p className="text-muted-foreground mb-4">
+                    Get unlimited AI tutoring, full CBC content, offline access, and parent progress reports. 
+                    Cheaper than tuition centers!
+                  </p>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-6">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-success" />
+                      <span>From KES 249/month</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Smartphone className="h-4 w-4 text-success" />
+                      <span>M-Pesa accepted</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-success" />
+                      <span>7-day money back</span>
+                    </div>
+                  </div>
+                  <Link to="/pricing">
+                    <Button size="lg" className="gap-2">
+                      <Crown className="h-4 w-4" />
+                      View Premium Plans
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* CTA Section */}
       {!user && (
         <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -147,12 +193,20 @@ export default function Home() {
               <p className="text-lg text-muted-foreground mb-8">
                 Join Kenyan students already using HappyLearn to access quality, inclusive, and equitable education—anywhere, anytime.
               </p>
-              <Link to="/auth">
-                <Button size="lg" className="gap-2">
-                  Start Learning Today
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/auth">
+                  <Button size="lg" className="gap-2">
+                    Start Learning Free
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/pricing">
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Crown className="h-4 w-4" />
+                    View Premium Plans
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </section>

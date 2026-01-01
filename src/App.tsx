@@ -19,6 +19,7 @@ import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import DemoDataGenerator from "./pages/DemoDataGenerator";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
                       }
                     />
                     <Route path="/demo-data" element={<DemoDataGenerator />} />
+                    <Route path="/pricing" element={<Pricing />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <Footer />
