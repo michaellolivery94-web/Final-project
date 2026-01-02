@@ -12,6 +12,9 @@ import { useVoiceOutput } from '@/hooks/useVoiceOutput';
 import { ConsentDialog } from '@/components/ConsentDialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useDailyQuestionLimit } from '@/hooks/useDailyQuestionLimit';
+import { QuestionLimitBanner } from '@/components/QuestionLimitBanner';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -42,6 +45,8 @@ export default function Chat() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { progress, incrementQuestions, setGradeAndSubject } = useProgress();
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
+  const { questionsUsed, remainingQuestions, canAskQuestion, incrementUsage, dailyLimit } = useDailyQuestionLimit(isPremium);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,6 +83,16 @@ export default function Chat() {
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
+
+    // Check question limit for free users
+    if (!canAskQuestion) {
+      toast({
+        title: "Daily limit reached",
+        description: "Upgrade to Premium for unlimited questions!",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const userMessage: Message = { role: 'user', content: input.trim() };
     setMessages((prev) => [...prev, userMessage]);
@@ -162,6 +177,7 @@ export default function Chat() {
 
       // Increment questions counter
       incrementQuestions();
+      incrementUsage();
 
       // Auto-speak response if enabled
       if (autoSpeak && assistantMessage) {
@@ -388,14 +404,22 @@ export default function Chat() {
               
               <Button
                 onClick={sendMessage}
-                disabled={loading || !input.trim()}
+                disabled={loading || !input.trim() || !canAskQuestion}
                 size="icon"
                 className="h-10 w-10 sm:h-11 sm:w-11"
-                title="Send message"
+                title={canAskQuestion ? "Send message" : "Daily limit reached"}
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" />
               </Button>
+            </div>
+            <div className="mt-3">
+              <QuestionLimitBanner
+                questionsUsed={questionsUsed}
+                dailyLimit={dailyLimit}
+                remainingQuestions={remainingQuestions}
+                isPremium={isPremium}
+              />
             </div>
             <p className="text-xs text-muted-foreground text-center mt-2">
               {isListening ? "🎤 Listening... Speak now!" : randomQuote}
