@@ -118,6 +118,98 @@ export function useSubscription() {
     }
   };
 
+  const initiatePayPalPayment = async (
+    planType: "monthly" | "quarterly" | "yearly"
+  ) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to subscribe to premium",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    try {
+      const amount = PRICING_PLANS[planType].price;
+      const returnUrl = `${window.location.origin}/pricing?payment=success&plan=${planType}`;
+      const cancelUrl = `${window.location.origin}/pricing?payment=cancelled`;
+
+      const response = await supabase.functions.invoke("paypal-create-order", {
+        body: {
+          plan_type: planType,
+          user_id: user.id,
+          amount_kes: amount,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.success && response.data?.approval_url) {
+        // Redirect to PayPal
+        window.location.href = response.data.approval_url;
+        return { success: true, data: response.data };
+      } else {
+        throw new Error(response.data?.error || "Failed to create PayPal order");
+      }
+    } catch (error) {
+      console.error("PayPal payment error:", error);
+      toast({
+        title: "Payment Failed",
+        description: error instanceof Error ? error.message : "Failed to initiate PayPal payment",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+  };
+
+  const capturePayPalPayment = async (
+    orderId: string,
+    planType: "monthly" | "quarterly" | "yearly"
+  ) => {
+    if (!user) return { success: false };
+
+    try {
+      const amount = PRICING_PLANS[planType].price;
+
+      const response = await supabase.functions.invoke("paypal-capture-order", {
+        body: {
+          order_id: orderId,
+          user_id: user.id,
+          plan_type: planType,
+          amount_kes: amount,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.success) {
+        toast({
+          title: "Payment Successful! 🎉",
+          description: "Welcome to HappyLearn Premium!",
+        });
+        await fetchSubscription();
+        return { success: true, data: response.data };
+      } else {
+        throw new Error(response.data?.error || "Failed to capture payment");
+      }
+    } catch (error) {
+      console.error("PayPal capture error:", error);
+      toast({
+        title: "Payment Failed",
+        description: error instanceof Error ? error.message : "Failed to complete PayPal payment",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+  };
+
   const checkPaymentStatus = async (checkoutRequestId: string) => {
     try {
       const { data, error } = await supabase
@@ -139,6 +231,8 @@ export function useSubscription() {
     isPremium,
     loading,
     initiateMpesaPayment,
+    initiatePayPalPayment,
+    capturePayPalPayment,
     checkPaymentStatus,
     refetch: fetchSubscription,
   };

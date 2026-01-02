@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Crown, Check, Sparkles, Phone, CreditCard, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSubscription, PRICING_PLANS } from "@/hooks/useSubscription";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const FREE_FEATURES = [
@@ -31,14 +31,38 @@ const PREMIUM_FEATURES = [
 
 export default function Pricing() {
   const { user } = useAuth();
-  const { isPremium, subscription, initiateMpesaPayment, loading } = useSubscription();
+  const { isPremium, subscription, initiateMpesaPayment, initiatePayPalPayment, capturePayPalPayment, loading } = useSubscription();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "quarterly" | "yearly">("monthly");
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paypalProcessing, setPaypalProcessing] = useState(false);
+
+  // Handle PayPal return
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+    const planType = searchParams.get("plan") as "monthly" | "quarterly" | "yearly" | null;
+    const token = searchParams.get("token"); // PayPal order ID
+
+    if (paymentStatus === "success" && token && planType && user) {
+      setPaypalProcessing(true);
+      capturePayPalPayment(token, planType).finally(() => {
+        setPaypalProcessing(false);
+        setSearchParams({});
+      });
+    } else if (paymentStatus === "cancelled") {
+      toast({
+        title: "Payment Cancelled",
+        description: "Your PayPal payment was cancelled.",
+        variant: "destructive",
+      });
+      setSearchParams({});
+    }
+  }, [searchParams, user]);
 
   const handleUpgrade = (plan: "monthly" | "quarterly" | "yearly") => {
     if (!user) {
@@ -274,9 +298,7 @@ export default function Pricing() {
           <Tabs defaultValue="mpesa" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="mpesa">M-Pesa</TabsTrigger>
-              <TabsTrigger value="other" disabled>
-                Other (Coming Soon)
-              </TabsTrigger>
+              <TabsTrigger value="paypal">PayPal</TabsTrigger>
             </TabsList>
 
             <TabsContent value="mpesa" className="space-y-4 mt-4">
@@ -325,6 +347,56 @@ export default function Pricing() {
 
               <p className="text-xs text-center text-muted-foreground">
                 You'll receive an M-Pesa prompt on your phone. Enter your PIN to complete payment.
+              </p>
+            </TabsContent>
+
+            <TabsContent value="paypal" className="space-y-4 mt-4">
+              <div className="bg-muted rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Plan</span>
+                  <span className="font-medium capitalize">{selectedPlan}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Amount (KES)</span>
+                  <span className="font-bold">KES {PRICING_PLANS[selectedPlan].price}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Amount (USD approx.)</span>
+                  <span className="font-medium">
+                    ~${(PRICING_PLANS[selectedPlan].price * 0.0065).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-accent/10 rounded-lg p-3">
+                <p className="font-medium mb-1">💡 Perfect for parents abroad!</p>
+                <p>Pay securely with your PayPal account or credit/debit card.</p>
+              </div>
+
+              <Button
+                className="w-full gap-2"
+                onClick={async () => {
+                  setIsProcessing(true);
+                  await initiatePayPalPayment(selectedPlan);
+                  setIsProcessing(false);
+                }}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                    Redirecting to PayPal...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4" />
+                    Pay with PayPal
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                You'll be redirected to PayPal to complete your payment securely.
               </p>
             </TabsContent>
           </Tabs>
