@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.mpesa-callback]
 verify_jwt = false
+
+[functions.paypal-create-order]
+verify_jwt = true
+
+[functions.paypal-capture-order]
+verify_jwt = true
