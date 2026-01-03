@@ -10,7 +10,29 @@ interface MpesaSTKRequest {
   phone_number: string;
   amount: number;
   plan_type: "monthly" | "quarterly" | "yearly";
-  user_id: string;
+}
+
+// Validate phone number format
+function isValidPhoneNumber(phone: string): boolean {
+  // Remove spaces and validate format
+  const cleaned = phone.replace(/\s+/g, "");
+  // Accept formats: +254XXXXXXXXX, 254XXXXXXXXX, 07XXXXXXXX, 01XXXXXXXX
+  return /^(\+?254|0)[17]\d{8}$/.test(cleaned);
+}
+
+// Validate plan type
+function isValidPlanType(plan: string): plan is "monthly" | "quarterly" | "yearly" {
+  return ["monthly", "quarterly", "yearly"].includes(plan);
+}
+
+// Validate amount for plan type
+function isValidAmount(amount: number, planType: string): boolean {
+  const validAmounts: Record<string, number> = {
+    monthly: 499,
+    quarterly: 1299,
+    yearly: 4499,
+  };
+  return validAmounts[planType] === amount;
 }
 
 serve(async (req) => {
@@ -19,9 +41,76 @@ serve(async (req) => {
   }
 
   try {
-    const { phone_number, amount, plan_type, user_id }: MpesaSTKRequest = await req.json();
+    // SECURITY: Authenticate the request using the Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    console.log("M-Pesa STK Push request:", { phone_number, amount, plan_type, user_id });
+    // Create Supabase client with user's auth token to verify identity
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
+
+    // Verify the authenticated user
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired authentication token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use authenticated user's ID instead of client-provided user_id
+    const authenticatedUserId = user.id;
+    console.log("Authenticated user:", authenticatedUserId);
+
+    // Parse and validate request body (user_id is NOT accepted from client)
+    const requestBody = await req.json();
+    const { phone_number, amount, plan_type } = requestBody as MpesaSTKRequest;
+
+    // Input validation
+    if (!phone_number || typeof phone_number !== "string") {
+      return new Response(
+        JSON.stringify({ error: "Valid phone number is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isValidPhoneNumber(phone_number)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid phone number format. Use format: 07XXXXXXXX or +254XXXXXXXXX" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!plan_type || !isValidPlanType(plan_type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid plan type. Must be monthly, quarterly, or yearly" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!amount || typeof amount !== "number" || !isValidAmount(amount, plan_type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid amount for the selected plan" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("M-Pesa STK Push request:", { phone_number, amount, plan_type, user_id: authenticatedUserId });
 
     // Get M-Pesa credentials from environment
     const consumerKey = Deno.env.get("MPESA_CONSUMER_KEY");
@@ -37,9 +126,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Initialize Supabase admin client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Step 1: Get OAuth token from Safaricom
@@ -118,11 +205,11 @@ serve(async (req) => {
     console.log("STK Push response:", JSON.stringify(stkData, null, 2));
 
     if (stkData.ResponseCode === "0") {
-      // Create subscription record
+      // Create subscription record using authenticated user ID
       const { data: subscription, error: subError } = await supabase
         .from("subscriptions")
         .insert({
-          user_id,
+          user_id: authenticatedUserId, // Use authenticated user ID
           plan_type,
           amount_kes: amount,
           payment_method: "mpesa",
@@ -138,7 +225,7 @@ serve(async (req) => {
       // Create payment transaction record
       const { error: txError } = await supabase.from("payment_transactions").insert({
         subscription_id: subscription?.id,
-        user_id,
+        user_id: authenticatedUserId, // Use authenticated user ID
         amount_kes: amount,
         payment_method: "mpesa",
         checkout_request_id: stkData.CheckoutRequestID,

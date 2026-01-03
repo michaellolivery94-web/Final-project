@@ -85,12 +85,12 @@ export function useSubscription() {
     try {
       const amount = PRICING_PLANS[planType].price;
 
+      // Note: user_id is now derived from authenticated user in edge function
       const response = await supabase.functions.invoke("mpesa-stk-push", {
         body: {
           phone_number: phoneNumber,
           amount,
           plan_type: planType,
-          user_id: user.id,
         },
       });
 
@@ -135,10 +135,10 @@ export function useSubscription() {
       const returnUrl = `${window.location.origin}/pricing?payment=success&plan=${planType}`;
       const cancelUrl = `${window.location.origin}/pricing?payment=cancelled`;
 
+      // Note: user_id is now derived from authenticated user in edge function
       const response = await supabase.functions.invoke("paypal-create-order", {
         body: {
           plan_type: planType,
-          user_id: user.id,
           amount_kes: amount,
           return_url: returnUrl,
           cancel_url: cancelUrl,
@@ -176,10 +176,10 @@ export function useSubscription() {
     try {
       const amount = PRICING_PLANS[planType].price;
 
+      // Note: user_id is now derived from authenticated user in edge function
       const response = await supabase.functions.invoke("paypal-capture-order", {
         body: {
           order_id: orderId,
-          user_id: user.id,
           plan_type: planType,
           amount_kes: amount,
         },
