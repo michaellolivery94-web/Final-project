@@ -32,17 +32,74 @@ async function getPayPalAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+// Validate plan type
+function isValidPlanType(plan: string): plan is "monthly" | "quarterly" | "yearly" {
+  return ["monthly", "quarterly", "yearly"].includes(plan);
+}
+
+// Validate amount for plan type
+function isValidAmount(amount: number, planType: string): boolean {
+  const validAmounts: Record<string, number> = {
+    monthly: 249,
+    quarterly: 599,
+    yearly: 1799,
+  };
+  return validAmounts[planType] === amount;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { plan_type, user_id, amount_kes, return_url, cancel_url } = await req.json();
-
-    if (!plan_type || !user_id || !amount_kes) {
+    // SECURITY: Authenticate the request using the Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields" }),
+        JSON.stringify({ success: false, error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify the authenticated user
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid or expired authentication token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authenticatedUserId = user.id;
+    console.log("Authenticated user:", authenticatedUserId);
+
+    const { plan_type, amount_kes, return_url, cancel_url } = await req.json();
+
+    // Input validation
+    if (!plan_type || !isValidPlanType(plan_type)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid plan type. Must be monthly, quarterly, or yearly" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!amount_kes || typeof amount_kes !== "number" || !isValidAmount(amount_kes, plan_type)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid amount for the selected plan" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -66,7 +123,7 @@ serve(async (req) => {
         intent: "CAPTURE",
         purchase_units: [
           {
-            reference_id: `${user_id}_${plan_type}_${Date.now()}`,
+            reference_id: `${authenticatedUserId}_${plan_type}_${Date.now()}`,
             description: `HappyLearn Premium - ${plan_type} plan`,
             amount: {
               currency_code: "USD",
@@ -93,13 +150,11 @@ serve(async (req) => {
     const order = await orderResponse.json();
     console.log("PayPal order created:", order.id);
 
-    // Store pending transaction in database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Store pending transaction in database using service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { error: dbError } = await supabase.from("payment_transactions").insert({
-      user_id,
+      user_id: authenticatedUserId, // Use authenticated user ID
       amount_kes,
       payment_method: "paypal",
       status: "initiated",

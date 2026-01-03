@@ -6,12 +6,70 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Secret key for admin access - should be set in environment
+const ADMIN_SECRET_KEY = Deno.env.get('ADMIN_SECRET_KEY');
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // SECURITY: Verify admin authentication
+    // Option 1: Check for admin secret key in header
+    const providedSecret = req.headers.get('x-admin-secret');
+    
+    // Option 2: Check if user is authenticated and has admin role
+    const authHeader = req.headers.get('Authorization');
+    
+    let isAuthorized = false;
+    
+    // Check admin secret key
+    if (ADMIN_SECRET_KEY && providedSecret === ADMIN_SECRET_KEY) {
+      isAuthorized = true;
+      console.log("Authorized via admin secret key");
+    }
+    
+    // Check authenticated admin user
+    if (!isAuthorized && authHeader) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      });
+      
+      const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+      
+      if (user && !authError) {
+        // Check if user has admin role
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        
+        const { data: roleData } = await supabaseAdmin
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        if (roleData) {
+          isAuthorized = true;
+          console.log("Authorized via admin role:", user.id);
+        }
+      }
+    }
+    
+    if (!isAuthorized) {
+      console.error("Unauthorized access attempt to generate-demo-data");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized. Admin access required." }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
