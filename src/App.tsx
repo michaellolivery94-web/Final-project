@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Lessons from "./pages/Lessons";
@@ -36,6 +37,7 @@ const App = () => (
               <AuthProvider>
                 <ProgressProvider>
                   <Navbar />
+                  <EmailVerificationBanner />
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/auth" element={<Auth />} />
