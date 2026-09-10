@@ -67,7 +67,14 @@ const App = () => (
                         </ProtectedRoute>
                       }
                     />
-                    <Route path="/demo-data" element={<DemoDataGenerator />} />
+                    <Route
+                      path="/demo-data"
+                      element={
+                        <ProtectedRoute>
+                          <DemoDataGenerator />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/pricing" element={<Pricing />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
