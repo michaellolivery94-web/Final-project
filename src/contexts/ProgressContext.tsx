@@ -36,7 +36,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     competencies: {},
   });
 
-  const [syncTimer, setSyncTimer] = useState<NodeJS.Timeout | null>(null);
+  const [syncTimer, setSyncTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (user) {
